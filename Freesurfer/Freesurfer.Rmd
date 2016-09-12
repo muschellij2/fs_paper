@@ -26,8 +26,6 @@ preamble: >
 output: rticles::rjournal_article
 ---
 
-# Abstract
-
 ```{r, echo = FALSE, message = FALSE}
 library(knitr)
 opts_chunk$set(
@@ -87,14 +85,14 @@ library(pander)
 #' }
 ```
 
-```{r braingraph}
+```{r braingraph, echo = FALSE}
 #' if (have_fs()) {
 #'    df = aparcs_to_bg(subjects = "bert", measure = "thickness")
 #'    print(head(df))
 #' }
 ```
 
-```{r nifti}
+```{r nifti, echo = FALSE}
 #' if (have_fs()){
 #'    img = oro.nifti::nifti(array(rnorm(5*5*5), dim = c(5,5,5)))  
 #'    mri_info(img)
@@ -253,7 +251,7 @@ MRI images typically exhibit good contrast between soft tissue classes, but inte
 
 The Freesurfer \code{nu\_correct} function requires a MNC format (\url{http://www.bic.mni.mcgill.ca/ServicesSoftware/MINC}).  For this to work, you can convert the \code{nifti} object to a MNC file using \code{nii2mnc} and pass that file into \code{nu\_correct}.  The \pkg{freesurfer} \code{nu\_correct} function will run the correction and then convert the output MNC to a NIfTI object.
 
-```{r nu_correct_mcn2nii, echo = TRUE, eval = TRUE}
+```{r nu_correct_mcn2nii, echo = TRUE, eval = TRUE, results='markup'}
 mnc = nii2mnc(img)
 print(mnc)
 nu_from_mnc = nu_correct(file = mnc)
@@ -263,7 +261,7 @@ ortho2(nu_from_mnc)
 
 You can also pass in a \code{nifti} object in directly, and the \pkg{freesurfer} \code{nu\_correct} function will automatically convert any NIfTI input files, and then run the correction.  We can also pass in a mask (generated from above) to run the correction only the areas of the brain.
  
-```{r nu_correct_nifti, echo = TRUE, eval = TRUE}
+```{r nu_correct_nifti, echo = TRUE, eval = TRUE, results='markup'}
 nu_nifti = nu_correct(file = img, mask = mask)
 class(nu_from_mnc)
 ```
