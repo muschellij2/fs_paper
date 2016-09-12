@@ -297,6 +297,99 @@ head(out$structures)
 \end{Soutput}
 \end{Schunk}
 
+\subsubsection{MRI conversion}\label{mri-conversion}
+
+The typical output format from Freesurfer is MGH/MGZ format, which is
+explained here:
+\url{https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/MghFormat}. As
+NIfTI formats are one of the most common formats and has been the common
+format for analysis in the \pkg{oro.nifti} and \pkg{fslr} packages, it
+is useful to convert these files to a NIfTI format to use in R. The
+\code{mri\_convert} Freesurfer function will be used for that. Here we
+will use the T1-weighted image from the ``bert'' subject, convert it to
+NIfTI, read it into R, and then plot the image.
+
+\begin{Schunk}
+\begin{Sinput}
+library(freesurfer)
+t1_mgz = file.path(fs_subj_dir(), "bert", "mri", "T1.mgz")
+t1_nii_fname = tempfile(fileext = ".nii.gz")
+freesurfer::mri_convert(t1_mgz, t1_nii_fname)
+library(fslr)
+img = fslr::readnii(t1_nii_fname)
+fslr::ortho2(img)
+\end{Sinput}
+
+\includegraphics{Freesurfer_files/figure-latex/mri_convert-1} \end{Schunk}
+
+\subsection{Brain extraction}\label{brain-extraction}
+
+The \code{mri\_watershed} function will segment the brain from the rest
+of the image. We ca pass in the \code{nifti} object and the output is a
+brain-extracted \code{nifti} object.
+
+\begin{Schunk}
+\begin{Sinput}
+ss = mri_watershed(img)
+ortho2(ss)
+\end{Sinput}
+
+\includegraphics{Freesurfer_files/figure-latex/watershed-1} \end{Schunk}
+
+As the result in a \code{nifti} object, we can create a mask by standard
+logical operations:
+
+\begin{Schunk}
+\begin{Sinput}
+mask = ss > 0
+\end{Sinput}
+\end{Schunk}
+
+\subsection{Bias-field correction}
+
+MRI images typically exhibit good contrast between soft tissue classes,
+but intensity inhomogeneities in the radio frequency field can cause
+differences in the ranges of tissue types at different spatial locations
+(e.g.\textasciitilde{}top versus bottom of the brain) . These
+inhomogeneities/non-uniformities can cause problems with algorithms
+based on histograms, quantiles, or raw intensities
+\citep{zhang_segmentation_2001}. Therefore, correction for image
+inhomogeneities is a crucial step in many analyses. The Freesurfer
+function \code{nu\_correct} performs the non-uniformity correction by
+\citet{sled_nonparametric_1998} and the \pkg{freesurfer} function of the
+same name will run the correction and return an image.
+
+The Freesurfer \code{nu\_correct} function requires a MNC format
+(\url{http://www.bic.mni.mcgill.ca/ServicesSoftware/MINC}). For this to
+work, you can convert the \code{nifti} object to a MNC file using
+\code{nii2mnc} and pass that file into \code{nu\_correct}. The
+\pkg{freesurfer} \code{nu\_correct} function will run the correction and
+then convert the output MNC to a NIfTI object.
+
+\begin{Schunk}
+\begin{Sinput}
+mnc = nii2mnc(img)
+print(mnc)
+nu_from_mnc = nu_correct(file = mnc)
+class(nu_from_mnc)
+ortho2(nu_from_mnc)
+\end{Sinput}
+
+\includegraphics{Freesurfer_files/figure-latex/nu_correct_mcn2nii-1} \end{Schunk}
+
+You can also pass in a \code{nifti} object in directly, and the
+\pkg{freesurfer} \code{nu\_correct} function will automatically convert
+any NIfTI input files, and then run the correction. We can also pass in
+a mask (generated from above) to run the correction only the areas of
+the brain.
+
+\begin{Schunk}
+\begin{Sinput}
+nu_nifti = nu_correct(file = img, mask = mask)
+class(nu_from_mnc)
+\end{Sinput}
+\end{Schunk}
+
 \subsection{Image preprocessing with \pkg{fslr}}
 
 We present a complete analysis of structural magnetic resonance imaging
@@ -313,18 +406,6 @@ these operations have been performed, one can take within-modality
 difference images to see the changes between visits. We will also
 register all images to a common stereotaxic template, as this is common
 in population-based analyses.
-
-\subsection{Bias-field correction}
-
-MRI images typically exhibit good contrast between soft tissue classes,
-but intensity inhomogeneities in the radio frequency (RF) field can
-cause differences in the ranges of tissue types at different spatial
-locations. These inhomogeneities can cause problems with algorithms
-based on histograms, quantiles, or raw intensities
-\citep{zhang_segmentation_2001}. Therefore, correction for image
-inhomogeneities is a crucial step in many analyses. FSL implements the
-bias-field correction from \citet{guillemaud_estimating_1997} in its
-FAST segmentation pipeline \citep{zhang_segmentation_2001}.
 
 \subsection{Section title in sentence
 case}\label{section-title-in-sentence-case}

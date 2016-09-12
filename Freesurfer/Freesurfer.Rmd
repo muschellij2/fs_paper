@@ -33,8 +33,11 @@ library(knitr)
 opts_chunk$set(
   eval = FALSE,
   echo = TRUE, 
-  prompt = FALSE, message = FALSE, 
-  warning = FALSE, comment = "", results = 'hide')
+  prompt = FALSE, 
+  message = FALSE, 
+  warning = FALSE, 
+  comment = "", results = 'hide',
+  cache = TRUE)
 library(freesurfer)
 library(pander)
 ```
@@ -145,7 +148,7 @@ library(pander)
 
 Freesurfer is a commonly-used software for processing and analyzing anatomical neuroimaging data \citep{fischl2012freesurfer}, developed by the Laboratory for Computational Neuroimaging at the Athinoula A. Martinos Center for Biomedical Imaging.  This software provides open-source, command-line tools for image processing tasks such as brain extraction/skull-stripping \citep{segonne2004hybrid}, bias-field correction \citep{sled_nonparametric_1998}, segmentation of structures within the brain \citep{fischl2002whole,fischl2004sequence}, and image registration \citep{fischl1999high,reuter2010highly}.  Many of these functions are used extensively in medical imaging pipelines and Freesurfer has a complete pipeline packaged with its software as well.   
 
-We have previously published a similar adaptation of the FSL imaging software \citep{jenkinson_fsl_2012} to R, called \CRANpkg{fslr} \citep{muschelli2015fslr}.  Again, we note that there exist a number of R packages for reading and manipulating image data, including \CRANpkg{AnalyzeFMRI} \citep{bordier_temporal_2011}, \CRANpkg{RNiftyReg} \citep{modat_rniftyreg:_2013}, and \CRANpkg{fmri} \citep{tabelow_statistical_2011} (see the Medical Imaging CRAN task view \url{http://cran.r-project.org/web/views/MedicalImaging.html} for more information).  Although these packages are useful for performing image analysis, much of the fundamental functionality of image preprocessing and processing that Freesurfer provides are not currently implemented in R.  The \pkg{ANTsR} package (\url{https://github.com/stnava/ANTsR}) has much of this functionality has been implemented, but this package has not been released onto CRAN.  Moreover, having multiple options for image processing through R allows for users to compare methods and the flexibility of using multiple packages to achieve a working data processing pipeline. 
+We have previously published a similar adaptation of the FSL imaging software \citep{jenkinson_fsl_2012} to R, called \CRANpkg{fslr} \citep{muschelli2015fslr}.  Again, we note that there exist a number of R packages for reading and manipulating image data, including \CRANpkg{AnalyzeFMRI} \citep{bordier_temporal_2011}, \CRANpkg{RNiftyReg} \citep{modat_rniftyreg:_2013}, and \CRANpkg{fmri} \citep{tabelow_statistical_2011} (see the Medical Imaging CRAN task view \url{http://cran.r-project.org/web/views/MedicalImaging.html} for more information).  Although these packages are useful for performing image analysis, much of the fundamental functionality of image preprocessing and processing that Freesurfer provides are not currently implemented in R.  The \pkg{ANTsR} package (\url{https://github.com/stnava/ANTsR}) is a currently unpublished R package that interfaces with the ANTs (advanced normalization tools) software suite \citep{avants_reproducible_2011}, where a lot of additional functionality has been implemented, but this package has not been released onto CRAN.  Moreover, having multiple options for image processing through R allows for users to compare methods and the flexibility of using multiple packages to achieve a working data processing pipeline. 
 
 In particular, we provide an interface to users to the state-of-the-art anatomical processing implemented in Freesurfer, as well as a suite of tools that simply the analysis of the output of Freesurfer.  This will allow R users to implement complete imaging analysis without necessarily learning Freesurfer-specific syntax.  
 
@@ -215,7 +218,55 @@ head(out$structures)
 ```
 
 
+### MRI conversion
 
+The typical output format from Freesurfer is MGH/MGZ format, which is explained here: \url{https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/MghFormat}.  As NIfTI formats are one of the most common formats and has been the common format for analysis in the \pkg{oro.nifti} and \pkg{fslr} packages, it is useful to convert these files to a NIfTI format to use in R.   The \code{mri\_convert} Freesurfer function will be used for that.  Here we will use the T1-weighted image from the "bert" subject, convert it to NIfTI, read it into R, and then plot the image.
+
+```{r mri_convert, echo = TRUE, eval = TRUE}
+library(freesurfer)
+t1_mgz = file.path(fs_subj_dir(), "bert", "mri", "T1.mgz")
+t1_nii_fname = tempfile(fileext = ".nii.gz")
+freesurfer::mri_convert(t1_mgz, t1_nii_fname)
+library(fslr)
+img = fslr::readnii(t1_nii_fname)
+fslr::ortho2(img)
+```
+
+
+## Brain extraction 
+
+The \code{mri\_watershed} function will segment the brain from the rest of the image.  We ca pass in the \code{nifti} object and the output is a brain-extracted \code{nifti} object.
+
+```{r watershed, echo = TRUE, eval = TRUE}
+ss = mri_watershed(img)
+ortho2(ss)
+```
+
+As the result in a \code{nifti} object, we can create a mask by standard logical operations:
+```{r mask, echo = TRUE, eval = TRUE}
+mask = ss > 0
+```
+
+\subsection{Bias-field correction}
+
+MRI images typically exhibit good contrast between soft tissue classes, but intensity inhomogeneities in the radio frequency field can cause differences in the ranges of tissue types at different spatial locations (e.g.~top versus bottom of the brain) .  These inhomogeneities/non-uniformities can cause problems with algorithms based on histograms, quantiles, or raw intensities \citep{zhang_segmentation_2001}.  Therefore, correction for image inhomogeneities is a crucial step in many analyses.  The Freesurfer function \code{nu\_correct} performs the non-uniformity correction by \citet{sled_nonparametric_1998} and the \pkg{freesurfer} function of the same name will run the correction and return an image.
+
+The Freesurfer \code{nu\_correct} function requires a MNC format (\url{http://www.bic.mni.mcgill.ca/ServicesSoftware/MINC}).  For this to work, you can convert the \code{nifti} object to a MNC file using \code{nii2mnc} and pass that file into \code{nu\_correct}.  The \pkg{freesurfer} \code{nu\_correct} function will run the correction and then convert the output MNC to a NIfTI object.
+
+```{r nu_correct_mcn2nii, echo = TRUE, eval = TRUE}
+mnc = nii2mnc(img)
+print(mnc)
+nu_from_mnc = nu_correct(file = mnc)
+class(nu_from_mnc)
+ortho2(nu_from_mnc)
+```
+
+You can also pass in a \code{nifti} object in directly, and the \pkg{freesurfer} \code{nu\_correct} function will automatically convert any NIfTI input files, and then run the correction.  We can also pass in a mask (generated from above) to run the correction only the areas of the brain.
+ 
+```{r nu_correct_nifti, echo = TRUE, eval = TRUE}
+nu_nifti = nu_correct(file = img, mask = mask)
+class(nu_from_mnc)
+```
 
 
 \subsection{Image preprocessing with \pkg{fslr}}
@@ -224,37 +275,10 @@ We present a complete analysis of structural magnetic resonance imaging (MRI) da
 
 
 
-\subsection{Bias-field correction}
-
-MRI images typically exhibit good contrast between soft tissue classes, but intensity inhomogeneities in the radio frequency (RF) field can cause differences in the ranges of tissue types at different spatial locations.  These inhomogeneities can cause problems with algorithms based on histograms, quantiles, or raw intensities \citep{zhang_segmentation_2001}.  Therefore, correction for image inhomogeneities is a crucial step in many analyses.  FSL implements the bias-field correction from \citet{guillemaud_estimating_1997} in its FAST segmentation pipeline \citep{zhang_segmentation_2001}.  
- 
-
-
-## Section title in sentence case
-
-This section may contain a figure such as Figure \ref{figure:rlogo}.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics{Rlogo}
-  \caption{The logo of R.}
-  \label{figure:rlogo}
-\end{figure}
-
-## Another section
-
-There will likely be several sections, perhaps including code snippets, such as:
-
-```{r}
-x <- 1:10
-x
-```
-
-
 ## Conclusion
-The neuroimaging community has developed a large collection of tools for image processing and analysis.  R has a number of packages to perform operations on images; \BIOpkg{EBImage} is one good example \citep{EBImage}. Much of the fundamental functionality of neuroimage processing is not currently available in R, such as brain extraction and tissue segmentation.  We present \pkg{fslr} to provide R users functions for image processing and analysis that are based on FSL, an established image processing and analysis software suite.  Interfacing R with existing, powerful software provides users with thoroughly-tested software and an additional community of users, which would not be available if the functions were rewritten in R.  \pkg{fslr} should be easy to use for any standard R user; the workflow allows R users to manipulate array-like \code{nifti} objects, pass them to \pkg{fslr} functions, which return \code{nifti} objects.  Moreover, as FSL and R are open source and free, this software is readily available to all users.  
+The neuroimaging community has developed a large collection of tools for image processing and analysis.  Some of the fundamental functionality of neuroimage processing is being added to R packages, such as the \pkg{fslr} and \pkg{ANTsR} packages.  Additional third-party software still has additional functionality that is not present in R, such as the surface-based registration and processing of Freesurfer.  We present \pkg{freesurfer} to bridge this gap and provide R users functions from Freesurfer.  Interfacing R with existing, powerful software provides users with thoroughly-tested software and an additional community of users, which would not be available if the functions were rewritten in R. 
 
-There has been an increasing popularity of similar interfacing of tools within the Python community such as Nipype \citep{gorgolewski_nipype:_2011} (https://qa.debian.org/popcon.php?package=nipype).  As many users of R may not have experience with Python or bash scripting, we believe \pkg{fslr} provides a lower threshold for use in the R community.  Other packages provide R users additional neuroimaging processing functionality such as \CRANpkg{AnalyzeFMRI} \citep{bordier_temporal_2011}, \CRANpkg{RNiftyReg} \citep{modat_rniftyreg:_2013}, and \CRANpkg{fmri} \citep{tabelow_statistical_2011}.   
+There has been an increasing popularity of similar interfacing of tools within the Python community such as Nipype \citep{gorgolewski_nipype:_2011} (https://qa.debian.org/popcon.php?package=nipype).  As many users of R may not have experience with Python or bash scripting, we believe \pkg{freesurfer} provides a lower threshold for use in the R community. 
 
 For example, other inhomogeneity correction methods exist, such as the popular N3 \citep{sled_nonparametric_1998} and N4 \citep{tustison_n4itk:_2010}, methods which are not implemented in \pkg{fslr}. \pkg{ANTsR} (\url{http://stnava.github.io/ANTsR/index.html}) is a currently unpublished R package that interfaces with the ANTs (advanced normalization tools) software suite \citep{avants_reproducible_2011}.  ANTs has implementations of these correction methods, an increased set of registration techniques, and other methods for image processing.  Other packages such as this, along with \pkg{fslr}, can create a diverse set of tools for neuroimaging within R, building on preexisting and widely-accepted software.  
 
