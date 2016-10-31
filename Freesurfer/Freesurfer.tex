@@ -43,24 +43,26 @@ packages for reading and manipulating image data, including
 \citep{tabelow_statistical_2011} (see the Medical Imaging CRAN task view
 \url{http://cran.r-project.org/web/views/MedicalImaging.html} for more
 information). Although these packages are useful for performing image
-analysis, much of the fundamental functionality of image preprocessing
-and processing that Freesurfer provides are not currently implemented in
-R. The \pkg{ANTsR} package (\url{https://github.com/stnava/ANTsR}) is a
-currently unpublished R package that interfaces with the ANTs (advanced
-normalization tools) software suite \citep{avants_reproducible_2011},
-where a lot of additional functionality has been implemented, but this
-package has not been released onto CRAN. Moreover, having multiple
-options for image processing through R allows for users to compare
-methods and the flexibility of using multiple packages to achieve a
-working data processing pipeline.
+analysis, much of the functionality of image preprocessing and
+processing that Freesurfer provides are not currently implemented in R,
+including surface-based registration. The \pkg{ANTsR} package
+(\url{https://github.com/stnava/ANTsR}) is a currently unpublished R
+package that interfaces with the ANTs (advanced normalization tools)
+software suite \citep{avants_reproducible_2011}, where a lot of
+additional functionality has been implemented, but this package has not
+been released onto CRAN. Moreover, having multiple options for image
+processing through R allows for users to compare methods and the
+flexibility of using multiple packages to achieve a working data
+processing pipeline.
 
 In particular, we provide an interface to users to the state-of-the-art
 anatomical processing implemented in Freesurfer, as well as a suite of
-tools that simply the analysis of the output of Freesurfer. This will
-allow R users to implement complete imaging analysis without necessarily
-learning Freesurfer-specific syntax.
+tools that simplify analyzing the output of Freesurfer. The
+\pkg{freesurfer} allow R users to implement complete anatomical imaging
+analysis without necessarily learning Freesurfer-specific syntax.
 
-\subsection{R imaging objects}\label{r-imaging-objects}
+\subsection{\texorpdfstring{Imaging formats in \pkg{freesurfer} and
+R}{Imaging formats in  and R}}\label{imaging-formats-in-and-r}
 
 The \CRANpkg{freesurfer} package relies on the \CRANpkg{oro.nifti}
 \citep{whitcher_working_2011} package implementation of images (referred
@@ -89,7 +91,8 @@ where the ``recon'' stands for reconstruction
 \code{-all} flag in the the \code{recon-all} function performs over 30
 different steps and takes 20-40 hours to fully process a subject when
 performing all the steps. This process is the common way of fully
-processing an T1-weighted image in Freesurfer.
+processing an T1-weighted image in Freesurfer, and is implemented in the
+\texttt{recon\_all} \pkg{freesurfer} function.
 
 If there are problems with the result of this processing, there are
 multiple steps users can edit certain parts of the processing, such as
@@ -98,23 +101,24 @@ remainder of the pipeline can be run after these steps. The full
 pipeline is broken down into 3 separate steps, referred to as
 \code{autorecon1}, \code{autorecon2}, and \code{autorecon3}, which
 correspond to the flags in \code{recon-all} used to initiate these
-steps. We have written wrapper functions \code{recon\_con1},
-\code{recon\_con2}, and \code{recon\_con3}, respectively, for simplicity
-to the R user.
+steps. We have written wrapper functions \code{autorecon1},
+\code{autorecon2}, and \code{autorecon3}, respectively, for simplicity
+to the R user. This allows users to run pieces of the pipeline if
+desired or restart a failed process after correction to the data.
 
 \subsection{R function setup}\label{r-function-setup}
 
 To use \pkg{freesurfer}, a working installation of Freesurfer is
 required. The following code was run using Freesurfer version
-freesurfer-Darwin-lion-stable-pub-v5.3.0. The Freesurfer version can be
-accessed using the \code{fs\_version} function. \pkg{freesurfer} must
+``freesurfer-Darwin-lion-stable-pub-v5.3.0''. The Freesurfer version can
+be accessed using the \code{fs\_version} function. \pkg{freesurfer} must
 also have the path of Freesurfer specified. If using R from a shell
 environment, and the \code{FREESURFER\_HOME} environment variable is set
 (which can be done when installing Freesurfer), \pkg{freesurfer} will
 use this as the path to Freesurfer. If using R through a graphical user
 interface (GUI) such as RStudio (RStudio, Boston, MA), environmental
 variables and paths are not explicitly exported. Therefore,
-\code{FREESURFER\_HOME} is not set, \code{freesurfer} will try the
+\code{FREESURFER\_HOME} is not set, \pkg{freesurfer} will try the
 default directories of Mac OSX and Linux. If the user did not perform an
 standard installation of Freesurfer, the path to Freesurfer can be
 specified using \code{options(freesurfer.path="/path/to/freesurfer")}.
@@ -159,8 +163,8 @@ Freesurfer. From the user's perspective, the input/output process is all
 within R. The advantage of this approach is that the user can read in an
 image, do manipulations of the \code{nifti} object using standard syntax
 for arrays, and pass this object into the \pkg{freesurfer} R function.
-Thus, users can create complete pipelines for the analysis of imaging
-data by accessing Freesurfer through \pkg{freesurfer}.
+Thus, users can use R functionality to manipulate objects while
+seamlessly passing these object to Freesurfer through \pkg{freesurfer}.
 
 \subsection{Example analyses and use of
 functions}\label{example-analyses-and-use-of-functions}
@@ -172,6 +176,33 @@ explore the results: ``mri'', which contain imaging data, ``stats'',
 whic containing statistics based on structures of the brain, and
 ``surf'', which contain the surface and curvature output from the
 Freesurfer processing.
+
+\subsection{Reconstruction}\label{reconstruction}
+
+For the \texttt{recon\_all} function, users must specify the input file
+(a T1-weighted image), the output directory, and the subject identifier.
+This function will take 20-40 hours to fully process the input file.
+
+\begin{Schunk}
+\begin{Sinput}
+recon_all(infile, outdir, subjid)
+\end{Sinput}
+\end{Schunk}
+
+A user can see the result of this output in the ``bert'' directory as an
+example:
+
+\begin{Schunk}
+\begin{Sinput}
+list.files(path  = file.path(fs_subj_dir(), "bert"))
+\end{Sinput}
+\begin{Soutput}
+ [1] "bem"     "label"   "mri"     "scripts" "src"     "stats"   "surf"   
+ [8] "tmp"     "touch"   "trash"  
+\end{Soutput}
+\end{Schunk}
+
+We will read in some of the output in the following sections.
 
 \subsubsection{Reading in anatomical
 statistics}\label{reading-in-anatomical-statistics}
@@ -187,11 +218,14 @@ file = file.path(fs_subj_dir(), "bert", "stats", "aseg.stats")
 out = read_aseg_stats(file)
 names(out)
 \end{Sinput}
+\begin{Soutput}
+[1] "measures"   "structures"
+\end{Soutput}
 \end{Schunk}
 
 The \code{measures} element corresponds to global measurements of the
-brain (e.g.\textasciitilde{}volume of the brain) as well as measures of
-gross anatomical structures (e.g.\textasciitilde{}gray matter).
+brain (e.g.~volume of the brain) as well as measures of gross anatomical
+structures (e.g.~gray matter).
 
 \begin{Schunk}
 \begin{Sinput}
@@ -214,6 +248,8 @@ head(out$measures[, c("meaning", "value", "units")])
 6  mm^3
 \end{Soutput}
 \end{Schunk}
+
+In some imaging analyses, comparing at these large measures of brain volume over time or across groups are of interest.  
 
 The \code{structures} element corresponds to a set of measures and statistics for a set of fixed anatomical structures.
 
@@ -239,36 +275,69 @@ head(out$structures)
 \end{Soutput}
 \end{Schunk}
 
+Similarly with global measures, these structure-specific measures can be
+used in analysis. Moreover, a large deviation in volume for a specific
+subject may indicate atrophy of a structure or an indication of a
+segmentation error.
+
 \subsubsection{MRI conversion}\label{mri-conversion}
 
 The typical output format from Freesurfer is MGH/MGZ format, which is
 explained here:
 \url{https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/MghFormat}. As
 NIfTI formats are one of the most common formats and has been the common
-format for analysis in the \pkg{oro.nifti} and \pkg{fslr} packages, it
-is useful to convert these files to a NIfTI format to use in R. The
+format for analysis in the \pkg{oro.nifti} and \pkg{neurobase} packages,
+it is useful to convert these files to a NIfTI format to use in R. The
 \code{mri\_convert} Freesurfer function will be used for that. Here we
-will use the T1-weighted image from the ``bert'' subject, convert it to
-NIfTI, read it into R, and then plot the image.
+will use the T1-weighted image from the ``bert'' subject and convert it
+to NIfTI:
 
 \begin{Schunk}
 \begin{Sinput}
 library(freesurfer)
-t1_mgz = file.path(fs_subj_dir(), "bert", "mri", "T1.mgz")
+bert_dir = file.path(fs_subj_dir(), "bert")
+t1_mgz = file.path(bert_dir, "mri", "T1.mgz")
 t1_nii_fname = tempfile(fileext = ".nii.gz")
 freesurfer::mri_convert(t1_mgz, t1_nii_fname)
-library(fslr)
-img = fslr::readnii(t1_nii_fname)
-fslr::ortho2(img)
+\end{Sinput}
+\end{Schunk}
+
+After this file is a NIfTI file, we can read it into R, and then plot
+the image:
+
+\begin{Schunk}
+\begin{Sinput}
+library(neurobase)
+img = neurobase::readnii(t1_nii_fname)
+neurobase::ortho2(img, add.orient = FALSE)
 \end{Sinput}
 
-\includegraphics{Freesurfer_files/figure-latex/mri_convert-1} \end{Schunk}
+\includegraphics{Freesurfer_files/figure-latex/mri_plot-1} \end{Schunk}
+
+Note, the image is not stored in the ``RPI'' format which is assumed
+when displaying using the \pkg{neurobase} \code{ortho2} function.
+
+As this is a commonly-used function, we have wrapped these two steps
+into the \texttt{readmgz} and \texttt{readmgh} functions, which warp
+\texttt{mri\_convert} and \texttt{readnii}. Here we show that these
+steps are equivalent to the \texttt{readmgz} function:
+
+\begin{Schunk}
+\begin{Sinput}
+img_mgz = readmgz(t1_mgz)
+all(img == img_mgz)
+\end{Sinput}
+\begin{Soutput}
+[1] TRUE
+\end{Soutput}
+\end{Schunk}
 
 \subsection{Brain extraction}\label{brain-extraction}
 
-The \code{mri\_watershed} function will segment the brain from the rest
-of the image. We ca pass in the \code{nifti} object and the output is a
-brain-extracted \code{nifti} object.
+The \code{mri\_watershed} function will segment the brain from the
+remainder of the image, such as extra-cranial tissues. We can pass in
+the \code{nifti} object and the output is a brain-extracted \code{nifti}
+object.
 
 \begin{Schunk}
 \begin{Sinput}
@@ -278,8 +347,13 @@ ortho2(ss)
 
 \includegraphics{Freesurfer_files/figure-latex/watershed-1} \end{Schunk}
 
+We see that the area of the skull, eyes, face, and other areas of the
+image are removed. We do see some areas that are likely non brain, such
+as the top left area of the top left panel of figure.
+
 As the result in a \code{nifti} object, we can create a mask by standard
-logical operations:
+logical operations. As MRI scans are commonly non-zero, the non-zero
+areas of the image are the ``brain'':
 
 \begin{Schunk}
 \begin{Sinput}
@@ -287,12 +361,15 @@ mask = ss > 0
 \end{Sinput}
 \end{Schunk}
 
+We can then use this mask to perform operations on the image, such as
+subsetting.
+
 \subsection{Bias-field correction}
 
 MRI images typically exhibit good contrast between soft tissue classes,
 but intensity inhomogeneities in the radio frequency field can cause
 differences in the ranges of tissue types at different spatial locations
-(e.g.\textasciitilde{}top versus bottom of the brain) . These
+(e.g.~top versus bottom of the brain). These
 inhomogeneities/non-uniformities can cause problems with algorithms
 based on histograms, quantiles, or raw intensities
 \citep{zhang_segmentation_2001}. Therefore, correction for image
@@ -312,56 +389,93 @@ then convert the output MNC to a NIfTI object.
 \begin{Sinput}
 mnc = nii2mnc(img)
 print(mnc)
+\end{Sinput}
+\begin{Soutput}
+[1] "/var/folders/1s/wrtqcpxn685_zk570bnx9_rr0000gr/T//RtmprAbuIo/file1519022caadd1.mnc"
+\end{Soutput}
+\begin{Sinput}
 nu_from_mnc = nu_correct(file = mnc)
 class(nu_from_mnc)
+\end{Sinput}
+\begin{Soutput}
+[1] "nifti"
+attr(,"package")
+[1] "oro.nifti"
+\end{Soutput}
+\begin{Sinput}
 ortho2(nu_from_mnc)
 \end{Sinput}
 
 \includegraphics{Freesurfer_files/figure-latex/nu_correct_mcn2nii-1} \end{Schunk}
 
-You can also pass in a \code{nifti} object in directly, and the
-\pkg{freesurfer} \code{nu\_correct} function will automatically convert
-any NIfTI input files, and then run the correction. We can also pass in
-a mask (generated from above) to run the correction only the areas of
-the brain.
+If you pass in a \code{nifti} object in directly into
+\texttt{nu\_correct}, the function will automatically convert any NIfTI
+input files, and then run the correction. We can also pass in a mask
+(generated from above) to run the correction only the areas of the
+brain.
 
 \begin{Schunk}
 \begin{Sinput}
 nu_nifti = nu_correct(file = img, mask = mask)
 class(nu_from_mnc)
 \end{Sinput}
+\begin{Soutput}
+[1] "nifti"
+attr(,"package")
+[1] "oro.nifti"
+\end{Soutput}
 \end{Schunk}
 
-\subsection{Image preprocessing with \pkg{fslr}}
+Overall, this correction is a way to make the intensities of the brain
+more homogeneous spatially. This method is different from that
+implemented in FSL (and therefore \pkg{fslr}), so it provides an
+alternative method to the R user than currently available.
 
-We present a complete analysis of structural magnetic resonance imaging
-(MRI) data performed using \pkg{fslr} and R. Images were obtained from a
-patient with multiple sclerosis (MS) at 2 different visits
-\citep{sweeney_automatic_2013}, located at \url{bit.ly/FSL_Data}. At
-each visit, the image modalities obtained were T1-weighted (T1),
-T2-weighted (T2), fluid-attenuated inversion recovery (FLAIR), and
-proton density (PD). In this example we will perform a MRI bias-field
-correction using FAST (FMRIB's Automated Segmentation Tool)
-\citep{zhang_segmentation_2001}, co-register scans within visits to the
-T1 image of that visit, and register T1 images between visits. Once
-these operations have been performed, one can take within-modality
-difference images to see the changes between visits. We will also
-register all images to a common stereotaxic template, as this is common
-in population-based analyses.
+\subsection{Label files}\label{label-files}
+
+Here we will read a label file for the left hemisphere cortex:
+
+\begin{Schunk}
+\begin{Sinput}
+file = file.path(fs_subj_dir(), "bert", "label", "lh.cortex.label")
+out = read_fs_label(file)
+head(out)
+\end{Sinput}
+\begin{Soutput}
+  vertex_num r_coord  a_coord s_coord        value
+1          0 -12.882 -102.449  -9.782 0.0000000000
+2          1 -13.331 -102.518  -9.829 0.0000000000
+3          2 -13.637 -102.514 -10.077 0.0000000000
+4          3 -13.031 -102.596 -10.024 0.0000000000
+5          4 -13.331 -102.510 -10.254 0.0000000000
+6          5 -13.610 -102.483 -10.295 0.0000000000
+\end{Soutput}
+\end{Schunk}
+
+The coordinates are mostly used in these files, not the value assigned.
+They can be used for registration as well.
+
+\subsection{Surface Files}\label{surface-files}
+
+For the initial release, we did not implement a method to read the
+annotation files and other surface-based files that Freesurfer uses.
+Reading in these files are planned for a future release.
 
 \subsection{Conclusion}\label{conclusion}
 
 The neuroimaging community has developed a large collection of tools for
 image processing and analysis. Some of the fundamental functionality of
-neuroimage processing is being added to R packages, such as the
-\pkg{fslr} and \pkg{ANTsR} packages. Additional third-party software
-still has additional functionality that is not present in R, such as the
+neuroimage processing is being added to R packages, such as our previous
+work porting FSL to R using \pkg{fslr} and the actively-developed GiThub
+\pkg{ANTsR} package. Additional third-party software still has
+additional functionality that is not present in R, such as the
 surface-based registration and processing of Freesurfer. We present
 \pkg{freesurfer} to bridge this gap and provide R users functions from
 Freesurfer. Interfacing R with existing, powerful software provides
 users with thoroughly-tested software and an additional community of
 users, which would not be available if the functions were rewritten in
-R.
+R. Although this external software dependency may not be an advantage
+for the software, it benefits from the years of previous testing.
 
 There has been an increasing popularity of similar interfacing of tools
 within the Python community such as Nipype
@@ -370,34 +484,13 @@ within the Python community such as Nipype
 of R may not have experience with Python or bash scripting, we believe
 \pkg{freesurfer} provides a lower threshold for use in the R community.
 
-For example, other inhomogeneity correction methods exist, such as the
-popular N3 \citep{sled_nonparametric_1998} and N4
-\citep{tustison_n4itk:_2010}, methods which are not implemented in
-\pkg{fslr}. \pkg{ANTsR} (\url{http://stnava.github.io/ANTsR/index.html})
-is a currently unpublished R package that interfaces with the ANTs
-(advanced normalization tools) software suite
-\citep{avants_reproducible_2011}. ANTs has implementations of these
-correction methods, an increased set of registration techniques, and
-other methods for image processing. Other packages such as this, along
-with \pkg{fslr}, can create a diverse set of tools for neuroimaging
-within R, building on preexisting and widely-accepted software.
+Most importantly, as \pkg{freesurfer} is based on the R framework, all
+the benefits of using R are available, such as dynamic documents, Shiny
+applications, customized figures, and state-of-the-art statistical
+methods. These benefits provide unique functionality compared to other
+software packages for neuroimaging.
 
-Most importantly, as \pkg{fslr} is based on the R framework, all the
-benefits of using R are available, such as dynamic documents,
-reproducible reports, customized figures, and state-of-the-art
-statistical methods. These benefits provide unique functionality
-compared to other software packages for neuroimaging.
-
-All data and code processed here is located at
-\url{https://github.com/muschellij2/FSLR_Data}.
-
-\subsection{Summary}\label{summary}
-
-This file is only a basic article template. For full details of
-\emph{The R Journal} style and information on how to prepare your
-article for submission, see the
-\href{https://journal.r-project.org/share/author-guide.pdf}{Instructions
-for Authors}. \bibliography{RJreferences}
+\bibliography{RJreferences}
 
 \address{%
 John Muschelli\\
