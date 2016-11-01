@@ -304,7 +304,7 @@ L = fslr::rpi_orient(ss)
 re_ss_img = L$img
 ortho2(re_ss_img, mask = re_ss_img)
 mask = re_ss_img > 0
-rm(list = c("L", "re_ss_img"))
+rm(list = c("L"))
 ```
 
 We see that the area of the skull, eyes, face, and other areas of the image are removed.  We do see some areas that may be part of some of the membranes between the brain and the skull, but this looks like an adequate brain extraction for most analyses.
@@ -316,14 +316,23 @@ mask = ss > 0
 
 We can then use this mask to perform operations on the image, such as subsetting.
 
+## Segmentations of Brain Structures
+
+Freesurfer is commonly used to segment structures of the brain.  We can visualize images of these segmentations, which are located in the "mri" folder.  We will choose the colors based on the Freesurfer look up table (LUT), which can be seen at [https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/AnatomicalROI/FreeSurferColorLUT](https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/AnatomicalROI/FreeSurferColorLUT).  This look up table provides a label for each structure and the color associated with it:
+
+```{r fs_lut, echo=TRUE, eval = TRUE}
+head(fs_lut)
+```
+
+This object is included in \pkg{freesurfer} and denotes the indices, labels and RGBA color representation of the structure.  We note that the alpha channel is set to $0$ for all regions of interest, so we will not use it in the calculation of the colors from RGB space. This LUT allows visualizations produced in R to be consistent with those from Freesurfer.  
 ```{r seg_file_show, echo = TRUE, eval = FALSE}
 seg_file = file = file.path(fs_subj_dir(), "bert", "mri", "aseg.mgz")
 seg = readmgz(seg_file)
 breaks = c(-1, fs_lut$index)
 colors = rgb(fs_lut$R, fs_lut$G, fs_lut$B, 
-             alpha = 0.5,
+             alpha = 255/2,
              maxColorValue = 255)
-ortho2(ss, seg, col.y = colors)
+ortho2(ss, seg, col.y = colors, ybreaks = breaks)
 ```
 
 ```{r seg_file, echo = FALSE, eval = TRUE, dependson="watershed_plot"}
@@ -334,11 +343,15 @@ L = fslr::rpi_orient(seg)
 seg = L$img
 breaks = c(-1, fs_lut$index)
 colors = rgb(fs_lut$R, fs_lut$G, fs_lut$B,
-             alpha = 0.5,
+             alpha = 255/2,
              maxColorValue = 255)
-ortho2(re_ss_img, seg, col.y = colors)
+ortho2(re_ss_img, seg, 
+       col.y = colors, 
+       ybreaks = breaks)
 rm(list = c("L", "colors", "breaks"))
 ```
+
+Note above that the number of breaks must be one larger than the number of colors and the indices start at zero, so we add an additional element to the indices.  
 
 
 
