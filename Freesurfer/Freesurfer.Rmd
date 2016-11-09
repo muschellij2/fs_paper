@@ -20,7 +20,7 @@ author:
     - 615 N Wolfe St, Baltimore, MD, 21205
     email: ccraini1@jhu.edu
 abstract: >
-  We present the package \CRANpkg{freesurfer}, a set of R functions that interface with Freesurfer, a commonly-used open-source software package for processing and analyzing structural neuroimaging data, specifically T1-weighted images.  The \pkg{freesurfer} package performs operations on \code{nifti} image objects in R using command-line functions from Freesurfer, and returns R objects back to the user.  \pkg{freesurfer} allows users to process neuroanatomical images and provides functionality to convert and read the output of the Freesurfer pipelines more easily. 
+  We present the package \CRANpkg{freesurfer}, a set of R functions that interface with Freesurfer, a commonly-used open-source software package for processing and analyzing structural neuroimaging data, specifically T1-weighted images.  The \pkg{freesurfer} package performs operations on \code{nifti} image objects in R using command-line functions from Freesurfer, and returns R objects back to the user.  \pkg{freesurfer} allows users to process neuroanatomical images and provides functionality to convert and read the output of the Freesurfer pipelines more easily. We present a series of functions that read and convert brain images, brain surfaces, and tables of Freesurfer output.
 preamble: >
   % Any extra latex you need in the preamble
 output: rticles::rjournal_article
@@ -146,7 +146,7 @@ library(neurobase)
 
 \label{sec:intro}
 
-Freesurfer is a commonly-used software for processing and analyzing anatomical neuroimaging data \citep{fischl2012freesurfer}, developed by the Laboratory for Computational Neuroimaging at the Athinoula A. Martinos Center for Biomedical Imaging.  This software provides open-source, command-line tools for image processing tasks such as brain extraction/skull-stripping \citep{segonne2004hybrid}, bias-field correction \citep{sled_nonparametric_1998}, segmentation of structures within the brain \citep{fischl2002whole,fischl2004sequence}, and image registration \citep{fischl1999high,reuter2010highly}.  In additio to these functions, Freesurfer has functions that perform complete pipelines for the user.   
+Freesurfer is a commonly-used software for processing and analyzing anatomical neuroimaging data \citep{fischl2012freesurfer}, developed by the Laboratory for Computational Neuroimaging at the Athinoula A. Martinos Center for Biomedical Imaging.  This software provides open-source, command-line tools for image processing tasks such as brain extraction/skull-stripping \citep{segonne2004hybrid}, bias-field correction \citep{sled_nonparametric_1998}, segmentation of structures within the brain \citep{fischl2002whole,fischl2004sequence}, and image registration \citep{fischl1999high,reuter2010highly}.  In addition to these functions, Freesurfer has functions that perform complete pipelines for the user.   
 
 We have previously published a similar adaptation of the FSL imaging software \citep{jenkinson_fsl_2012} to R, called \CRANpkg{fslr} \citep{muschelli2015fslr}.  Again, we note that there exist a number of R packages for reading and manipulating image data, including \CRANpkg{AnalyzeFMRI} \citep{bordier_temporal_2011}, \CRANpkg{RNiftyReg} \citep{modat_rniftyreg:_2013}, and \CRANpkg{fmri} \citep{tabelow_statistical_2011} (see the Medical Imaging CRAN task view \url{http://cran.r-project.org/web/views/MedicalImaging.html} for more information).  Although these packages are useful for performing image analysis, much of the functionality of image processing that Freesurfer provides are not currently implemented in R, including surface-based registration.  The \pkg{ANTsR} package (\url{https://github.com/stnava/ANTsR}) is a currently unpublished R package that interfaces with the ANTs (advanced normalization tools) software suite \citep{avants_reproducible_2011}, where a lot of additional functionality has been implemented, but this package has not been released onto CRAN.  Moreover, having multiple options for image processing through R allows for users to compare methods and the flexibility of using multiple packages to achieve a working data processing pipeline. 
 
@@ -173,7 +173,7 @@ During the installation of Freesurfer, additional environment variables are set 
 
 This setup may not be desirable if the user prefers to structure his/her data differently.  For example, if data from multiple studies are present, these may be organized into different folders in different locations.  Some functions in Freesurfer rely on the \code{SUBJECTS\_DIR} variable to run.  For example, the \code{asegstats2table} function takes the **a**natomical **seg**mentation **stat**istics and convert it to a table.  The default argument for \code{asegstats2table} is to pass in a subject name rather than a file.  
 
-To provide flexibility to the user, \pkg{freesurfer} allows most functions to specify a file or different directory rather than the subject.  A function may temporarily set \code{SUBJECTS\_DIR} to a temporary directory with the data, excecute the command, then reset the \code{SUBJECTS\_DIR} variable, or allow for a different subjects directory.  This provides a more flexible workflow.  For example, the \pkg{freesurfer} \code{asegstats2table} function allows the R user to specify a different subject directory to read in the file, while not overriding the default set by \code{SUBJECTS\_DIR}.  This functionality allows users to have separate folders with subjects and read in the data by simply switching the \code{subj\_dir} argument in the R function. 
+To provide flexibility to the user, \pkg{freesurfer} allows most functions to specify a file or different directory rather than the subject.  A function may temporarily set \code{SUBJECTS\_DIR} to a temporary directory with the data, execute the command, then reset the \code{SUBJECTS\_DIR} variable, or allow for a different subjects directory.  This provides a more flexible workflow.  For example, the \pkg{freesurfer} \code{asegstats2table} function allows the R user to specify a different subject directory to read in the file, while not overriding the default set by \code{SUBJECTS\_DIR}.  This functionality allows users to have separate folders with subjects and read in the data by simply switching the \code{subj\_dir} argument in the R function. 
 
 
 
@@ -192,14 +192,6 @@ Some Freesurfer functions require an image as an input.  For those functions, th
 
 # Example analyses and use of functions
 
-In the default subjects directory in the Freesurfer installation, there is a subject named "bert", where \code{recon-all} was run.   A user can see the result of this output in the "bert" directory:
-
-```{r, eval = TRUE, warning=FALSE, results='markup'}
-list.files(path  = file.path(fs_subj_dir(), "bert"))
-```
-
-We will explore the results in "mri", which contain imaging data, "stats", which containing statistics based on structures of the brain, and "surf", which contain the surface and curvature output from the Freesurfer processing.  
-
 ## Reconstruction
 
 For the `recon_all` function, users must specify the input file (a T1-weighted image), the output directory, and the subject identifier.  This function will take 20-40 hours to fully process the input file.  
@@ -208,9 +200,161 @@ For the `recon_all` function, users must specify the input file (a T1-weighted i
 recon_all(infile, outdir, subjid)
 ```
 
+For this paper, we will not run the analysis on a subject, but rather explore the output results for a subject included in the Freesurfer installation.  In particular, in the default Freesurfer subjects directory, there is a subject named "bert".  We see the result of this output in the "bert" directory, which includes a series of sub-directories:
+
+```{r, eval = TRUE, warning=FALSE, results='markup'}
+list.files(path  = file.path(fs_subj_dir(), "bert"))
+```
+
+We will explore the results in "mri", which contain imaging data, "stats", which containing statistics based on structures of the brain, and "surf", which contain the surface and curvature output from the Freesurfer processing.  
 
 
-### Reading in anatomical statistics
+## MRI conversion: the \code{mri\_convert} function
+
+The typical output format of brain volumes from Freesurfer is MGH/MGZ format, which is explained here: \url{https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/MghFormat}.  As NIfTI formats are one of the most common formats and has been the common format for analysis in the \pkg{oro.nifti} and \pkg{neurobase} packages, it is useful to convert these files to a NIfTI format to read into R.   The \code{mri\_convert} Freesurfer function will be used for that.  Here we will use the T1-weighted image from the "bert" subject and convert it to NIfTI, and read it into R:
+
+```{r mri_convert, echo = TRUE, eval = TRUE}
+library(freesurfer)
+bert_dir = file.path(fs_subj_dir(), "bert") # subject directory
+t1_mgz = file.path(bert_dir, "mri", "T1.mgz") # mgz file
+t1_nii_fname = tempfile(fileext = ".nii.gz") # temporary NIfTI file
+freesurfer::mri_convert(t1_mgz, t1_nii_fname) # conversion
+img = neurobase::readnii(t1_nii_fname) # read in outputs
+```
+
+As this is a commonly-used function, we have wrapped these two steps into the `readmgz` and `readmgh` functions, which combine the `mri_convert` and `readnii` functions.  Here we show that these steps are equivalent to the `readmgz` function:
+
+```{r comp_mri, echo = TRUE, eval = TRUE, results='markup'}
+img_mgz = readmgz(t1_mgz)
+all(img == img_mgz)
+```
+
+Now that we have the image in R, we can plot it using the standard plotting tools for `nifti` objects:
+```{r mri_plot, echo = TRUE, eval = TRUE, dependson='mri_convert', fig.cap="Plot of T1-weighted image from bert subject in Freesurfer."}
+neurobase::ortho2(img, add.orient = FALSE, mask = img > 40)
+```
+
+Note, the image is not stored in the "RPI" format which is assumed when  displaying using the \pkg{neurobase} \code{ortho2} function.  We can use the `rpi_orient` function in fslr (version $\geq$ 2.4.0) or `fslswapdim` to reorient.
+
+```{r reorient_show, echo = TRUE, eval = FALSE}
+L = fslr::rpi_orient(img)
+reoriented_img = L[["img"]]
+```
+
+```{r reorient, echo = FALSE, eval = TRUE}
+L = fslr::rpi_orient(img)
+reoriented_img = L$img
+rm(list = "L")
+```
+
+We see that this function puts this image in the RPI orientation, which matches the assumed orientation for `ortho2`:
+
+```{r mri_plot2, echo = TRUE, eval = TRUE, dependson='reorient', fig.cap="Plot of T1-weighted image from bert subject in Freesurfer after re-orientation to RPI orientation.  Note, the letters denote the orientation of right/left (R/L), posterior/anterior (P/A), inferior/superior (I/S). "}
+neurobase::ortho2(reoriented_img, mask = reoriented_img > 40)
+```
+
+
+## Brain extraction: the \code{mri\_watershed} function
+
+The \code{mri\_watershed} function will segment the brain from the remainder of the image, such as extra-cranial tissues.  Other imaging software in R have implemented the watershed algorithm, such as \BIOpkg{EBImage} [@EBImage].  These methods have not been directly adapted for MRI nor specifically for brain extraction.  In \pkg{freesurfer}, we can pass in the \code{nifti} object and the output is a brain-extracted \code{nifti} object.
+
+```{r watershed, echo = TRUE, eval = TRUE, dependson="mri_convert"}
+ss = mri_watershed(img)
+```
+
+```{r watershed_plot_show, echo = TRUE, eval = FALSE}
+ortho2(ss, mask = ss)
+```
+```{r watershed_plot, echo = FALSE, eval = TRUE, dependson="watershed", fig.cap="Brain-extracted image after using Freesurfer \\code{mri\\_watershed} algorithm.  We see that the areas outside of the brain have been removed from the image."}
+#############################
+# You cannot reorient beforehand if you use the template
+# in mri_watershed, which is the default
+# so you reorient after
+#############################
+L = fslr::rpi_orient(ss)
+re_ss_img = L$img
+ortho2(re_ss_img, mask = re_ss_img)
+mask = re_ss_img > 0
+rm(list = c("L"))
+```
+
+We see that the area of the skull, eyes, face, and other areas of the image are removed.  We do see some areas that may be part of some of the membranes between the brain and the skull, but this looks like an adequate brain extraction for most analyses.
+
+As the result in a \code{nifti} object, we can create a mask by standard logical operations.  As MRI scans are commonly non-zero, the non-zero areas of the image are the "brain":
+```{r mask_show, echo = TRUE, eval = FALSE, dependson="watershed"}
+mask = ss > 0
+```
+
+We can then use this mask to perform operations on the image, such as subsetting.
+
+## Segmentations of Brain Structures
+
+Freesurfer is commonly used to segment structures of the brain.  We can visualize images of these segmentations, which are located in the "mri" folder.  We will choose the colors based on the Freesurfer look up table (LUT), which can be seen at [https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/AnatomicalROI/FreeSurferColorLUT](https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/AnatomicalROI/FreeSurferColorLUT).  This look up table provides a label for each structure and the color associated with it:
+
+```{r fs_lut, echo=TRUE, eval = TRUE}
+head(freesurfer::fs_lut)
+```
+
+This object is included in \pkg{freesurfer} and denotes the indices, labels and RGBA color representation of the structure.  We note that the alpha channel is set to $0$ for all regions of interest, so we will not use it in the calculation of the colors from RGB space. This LUT allows visualizations produced in R to be consistent with those from Freesurfer.  
+```{r seg_file_show, echo = TRUE, eval = FALSE}
+seg_file = file = file.path(fs_subj_dir(), "bert", "mri", "aseg.mgz")
+seg = readmgz(seg_file)
+breaks = c(-1, fs_lut$index)
+colors = rgb(fs_lut$R, fs_lut$G, fs_lut$B, 
+             alpha = 255/2,
+             maxColorValue = 255)
+ortho2(ss, seg, col.y = colors, ybreaks = breaks)
+```
+
+```{r seg_file, echo = FALSE, eval = TRUE, dependson="watershed_plot", fig.cap="Overlay of segmentation from Freesurfer \\code{recon-all} command.  "}
+seg_file = file = file.path(fs_subj_dir(), 
+                            "bert", "mri", "aseg.mgz")
+seg = readmgz(seg_file)
+L = fslr::rpi_orient(seg)
+seg = L$img
+breaks = c(-1, fs_lut$index)
+colors = rgb(fs_lut$R, fs_lut$G, fs_lut$B,
+             alpha = 255/2,
+             maxColorValue = 255)
+ortho2(re_ss_img, seg, 
+       col.y = colors, 
+       ybreaks = breaks,
+       mask = re_ss_img)
+rm(list = c("L", "colors", "breaks"))
+```
+
+Note above that the number of breaks must be one larger than the number of colors and the indices start at zero, so we add an additional element to the indices.  
+
+
+## Bias-field correction: the \code{nu\_correct} function
+
+MRI images typically exhibit good contrast between soft tissue classes, but intensity inhomogeneities in the radio frequency field can cause differences in the ranges of tissue types at different spatial locations (e.g. top versus bottom of the brain).  These inhomogeneities/non-uniformities can cause problems with algorithms based on histograms, quantiles, or raw intensities \citep{zhang_segmentation_2001}.  Therefore, correction for image inhomogeneities is a crucial step in many analyses.  The Freesurfer function \code{nu\_correct} performs the non-uniformity correction by \citet{sled_nonparametric_1998} and the \pkg{freesurfer} function of the same name will run the correction and return an image.
+
+The Freesurfer \code{nu\_correct} function requires a MNC format (\url{http://www.bic.mni.mcgill.ca/ServicesSoftware/MINC}).  For this to work, you can convert the \code{nifti} object to a MNC file using \code{nii2mnc} and pass that file into \code{nu\_correct}.  The \pkg{freesurfer} \code{nu\_correct} function will run the correction and then convert the output MNC to a NIfTI object.  
+
+```{r nu_correct_mcn2nii, echo = TRUE, eval = TRUE,  dependson="reorient", results='markup'}
+mnc = nii2mnc(reoriented_img)
+print(mnc)
+nu_from_mnc = nu_correct(file = mnc)
+class(nu_from_mnc)
+```
+
+```{r nu_correct_plot, echo = TRUE, eval = TRUE,  dependson="nu_correct_mcn2nii", results='markup', fig.cap="Inhomogeneity-corrected image output from Freesurfer \\code{nu\\_correct} command and the estimated log bias-field."}
+bias_field = finite_img(log(reoriented_img / nu_from_mnc))
+double_ortho(nu_from_mnc, bias_field, col.y = hotmetal(), mask = nu_from_mnc > 40)
+```
+
+In addition to the \code{readmgz} and \code{readmgh} functions above, we have a \code{readmnc} function for reading in MINC files, after conversion to NIfTI files.  If you pass in a \code{nifti} object in directly into `nu_correct`, the function will automatically convert any NIfTI input files, and then run the correction (shown below).  We can also pass in a mask (generated from above) to run the correction only the areas of the brain.
+
+```{r nu_correct_nifti, echo = TRUE, eval = TRUE, results='markup', dependson=c("watershed_plot", "reorient")}
+nu_masked = nu_correct(file = reoriented_img, mask = mask)
+class(nu_masked)
+```
+
+Overall, this correction is a way to make the intensities of the brain more homogeneous spatially.  This method is different from that implemented in FSL (and therefore \pkg{fslr}), so it provides an alternative method to the R user than currently available.
+
+
+## Reading in anatomical statistics for brain structures
 
 The "aseg.stats" in the "stats" folder of subject bert corresponds to measures and statistics from the anatomical segmentation.  The \code{read\_aseg\_stats} function reads this corresponding file and creates a list of 2 different \code{data.frame}s:
 
@@ -238,169 +382,73 @@ head(out$structures, n = 3)
 Similarly with global measures, these structure-specific measures can be used in analysis.  Moreover, a large deviation in volume for a specific subject may indicate atrophy of a structure or an indication of a segmentation error.  
 
 
-### MRI conversion: the \code{mri\_convert} function
+## Converting surfaces using \code{mris\_convert}
 
-The typical output format from Freesurfer is MGH/MGZ format, which is explained here: \url{https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/MghFormat}.  As NIfTI formats are one of the most common formats and has been the common format for analysis in the \pkg{oro.nifti} and \pkg{neurobase} packages, it is useful to convert these files to a NIfTI format to read into R.   The \code{mri\_convert} Freesurfer function will be used for that.  Here we will use the T1-weighted image from the "bert" subject and convert it to NIfTI, and read it into R:
+The \code{mri\_convert} function provides a tool to convert image volumes to a series of output format and the \code{mris\_convert} allows users to convert between image surface formats.  These surfaces usually store sets of vertices and faces to be plotted in 3 dimensions (3D).  \pkg{freesurfer} has implemented \code{mris\_convert} (with a function of the same name) as well as functions to convert surfaces from Freesurfer to a set of triangles in R, such as `surface_to_triangles`.  We will read in the left and right side of the pial surface of the brain and plot them in 3D using \CRANpkg{rgl} \citep{rgl}.
 
-```{r mri_convert, echo = TRUE, eval = TRUE}
-library(freesurfer)
-bert_dir = file.path(fs_subj_dir(), "bert") # subject directory
-t1_mgz = file.path(bert_dir, "mri", "T1.mgz") # mgz file
-t1_nii_fname = tempfile(fileext = ".nii.gz") # temporary NIfTI file
-freesurfer::mri_convert(t1_mgz, t1_nii_fname) # conversion
-img = neurobase::readnii(t1_nii_fname) # read in outputs
+```{r rgl_plot_show, cache=FALSE, eval = FALSE, echo = TRUE}
+right_file = file.path(fs_subj_dir(), 
+                   "bert", "surf", "rh.pial")
+right_triangles = surface_to_triangles(infile = right_file)
+left_file = file.path(fs_subj_dir(), 
+                   "bert", "surf", "lh.pial")
+left_triangles = surface_to_triangles(infile = left_file) 
+rgl::rgl.open()
+rgl::rgl.triangles(right_triangles, 
+                   color = rainbow(nrow(right_triangles)))
+rgl::rgl.triangles(left_triangles, 
+                   color = rainbow(nrow(left_triangles)))
 ```
 
-As this is a commonly-used function, we have wrapped these two steps into the `readmgz` and `readmgh` functions, which combine the `mri_convert` and `readnii` functions.  Here we show that these steps are equivalent to the `readmgz` function:
-
-```{r comp_mri, echo = TRUE, eval = TRUE, results='markup'}
-img_mgz = readmgz(t1_mgz)
-all(img == img_mgz)
+```{r rgl_plot, cache = TRUE, eval = TRUE, echo = FALSE}
+filename = "Freesurfer_files/figure-latex/rgl_plot_out.png"
+if (!file.exists(filename)) {
+  right_file = file.path(fs_subj_dir(), 
+                         "bert", "surf", "rh.pial")
+  right_triangles = surface_to_triangles(infile = right_file)
+  left_file = file.path(fs_subj_dir(), 
+                        "bert", "surf", "lh.pial")
+  left_triangles = surface_to_triangles(infile = left_file) 
+  rgl::rgl.open()
+  rgl::rgl.triangles(right_triangles, 
+                     color = rainbow(nrow(right_triangles)))
+  rgl::rgl.triangles(left_triangles, 
+                     color = rainbow(nrow(left_triangles)))
+  rgl.viewpoint(0, -70)
+  # rpm * duration must equal 15 because 15 seconds / 60 seconds 
+  # want 1/4 rotation.  
+  # rot/min * 1min/60sec * #seconds = # rotations
+  play3d(spin3d(axis = c(0,0,1), rpm = 100), 
+         duration = .27)
+  rgl.snapshot(filename = filename)
+  rgl.close()
+  rm(list = c("right_triangles", "left_triangles"))
+}
 ```
 
-Now that we have the image in R, we can plot it using the standard plotting tools for `nifti` objects:
-```{r mri_plot, echo = TRUE, eval = TRUE, dependson='mri_convert'}
-neurobase::ortho2(img, add.orient = FALSE, mask = img > 40)
-```
+![Pial surface from bert subject in Freesurfer rendered using \pkg{rgl}.](Freesurfer_files/figure-latex/rgl_plot_out.png)
 
-Note, the image is not stored in the "RPI" format which is assumed when  displaying using the \pkg{neurobase} \code{ortho2} function.  We can use the `rpi_orient` function in fslr (version $\geq$ 2.4.0) or `fslswapdim` to reorient.
-
-```{r reorient_show, echo = TRUE, eval = FALSE}
-L = fslr::rpi_orient(img)
-reoriented_img = L$img
-```
-
-```{r reorient, echo = FALSE, eval = TRUE}
-L = fslr::rpi_orient(img)
-reoriented_img = L$img
-rm(list = "L")
-```
-
-We see that this function puts this image in the RPI format, which matches the assumed orientation for `ortho2`:
-
-```{r mri_plot2, echo = TRUE, eval = TRUE, dependson='reorient'}
-neurobase::ortho2(reoriented_img, mask = reoriented_img > 40)
-```
-
-
-## Brain extraction: the \code{mri\_watershed} function
-
-The \code{mri\_watershed} function will segment the brain from the remainder of the image, such as extra-cranial tissues.  Other imaging software in R have implemented the watershed algorithm, such as \BIOpkg{EBImage} [@EBImage].  These methods have not been directly adapted for MRI nor specifically for brain extraction.  In \pkg{freesurfer}, we can pass in the \code{nifti} object and the output is a brain-extracted \code{nifti} object.
-
-```{r watershed, echo = TRUE, eval = TRUE, dependson="mri_convert"}
-ss = mri_watershed(img)
-```
-
-```{r watershed_plot_show, echo = TRUE, eval = FALSE}
-ortho2(ss, mask = ss)
-```
-```{r watershed_plot, echo = FALSE, eval = TRUE, dependson="watershed"}
-#############################
-# You cannot reorient beforehand if you use the template
-# in mri_watershed, which is the default
-# so you reorient after
-#############################
-L = fslr::rpi_orient(ss)
-re_ss_img = L$img
-ortho2(re_ss_img, mask = re_ss_img)
-mask = re_ss_img > 0
-rm(list = c("L"))
-```
-
-We see that the area of the skull, eyes, face, and other areas of the image are removed.  We do see some areas that may be part of some of the membranes between the brain and the skull, but this looks like an adequate brain extraction for most analyses.
-
-As the result in a \code{nifti} object, we can create a mask by standard logical operations.  As MRI scans are commonly non-zero, the non-zero areas of the image are the "brain":
-```{r mask_show, echo = TRUE, eval = FALSE, dependson="watershed"}
-mask = ss > 0
-```
-
-We can then use this mask to perform operations on the image, such as subsetting.
-
-## Segmentations of Brain Structures
-
-Freesurfer is commonly used to segment structures of the brain.  We can visualize images of these segmentations, which are located in the "mri" folder.  We will choose the colors based on the Freesurfer look up table (LUT), which can be seen at [https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/AnatomicalROI/FreeSurferColorLUT](https://surfer.nmr.mgh.harvard.edu/fswiki/FsTutorial/AnatomicalROI/FreeSurferColorLUT).  This look up table provides a label for each structure and the color associated with it:
-
-```{r fs_lut, echo=TRUE, eval = TRUE}
-head(fs_lut)
-```
-
-This object is included in \pkg{freesurfer} and denotes the indices, labels and RGBA color representation of the structure.  We note that the alpha channel is set to $0$ for all regions of interest, so we will not use it in the calculation of the colors from RGB space. This LUT allows visualizations produced in R to be consistent with those from Freesurfer.  
-```{r seg_file_show, echo = TRUE, eval = FALSE}
-seg_file = file = file.path(fs_subj_dir(), "bert", "mri", "aseg.mgz")
-seg = readmgz(seg_file)
-breaks = c(-1, fs_lut$index)
-colors = rgb(fs_lut$R, fs_lut$G, fs_lut$B, 
-             alpha = 255/2,
-             maxColorValue = 255)
-ortho2(ss, seg, col.y = colors, ybreaks = breaks)
-```
-
-```{r seg_file, echo = FALSE, eval = TRUE, dependson="watershed_plot"}
-seg_file = file = file.path(fs_subj_dir(), 
-                            "bert", "mri", "aseg.mgz")
-seg = readmgz(seg_file)
-L = fslr::rpi_orient(seg)
-seg = L$img
-breaks = c(-1, fs_lut$index)
-colors = rgb(fs_lut$R, fs_lut$G, fs_lut$B,
-             alpha = 255/2,
-             maxColorValue = 255)
-ortho2(re_ss_img, seg, 
-       col.y = colors, 
-       ybreaks = breaks)
-rm(list = c("L", "colors", "breaks"))
-```
-
-Note above that the number of breaks must be one larger than the number of colors and the indices start at zero, so we add an additional element to the indices.  
-
-
-
-\subsection{Bias-field correction: the \code{nu\_correct} function}
-
-MRI images typically exhibit good contrast between soft tissue classes, but intensity inhomogeneities in the radio frequency field can cause differences in the ranges of tissue types at different spatial locations (e.g. top versus bottom of the brain).  These inhomogeneities/non-uniformities can cause problems with algorithms based on histograms, quantiles, or raw intensities \citep{zhang_segmentation_2001}.  Therefore, correction for image inhomogeneities is a crucial step in many analyses.  The Freesurfer function \code{nu\_correct} performs the non-uniformity correction by \citet{sled_nonparametric_1998} and the \pkg{freesurfer} function of the same name will run the correction and return an image.
-
-The Freesurfer \code{nu\_correct} function requires a MNC format (\url{http://www.bic.mni.mcgill.ca/ServicesSoftware/MINC}).  For this to work, you can convert the \code{nifti} object to a MNC file using \code{nii2mnc} and pass that file into \code{nu\_correct}.  The \pkg{freesurfer} \code{nu\_correct} function will run the correction and then convert the output MNC to a NIfTI object.  
-
-```{r nu_correct_mcn2nii, echo = TRUE, eval = TRUE,  dependson="reorient", results='markup'}
-mnc = nii2mnc(reoriented_img)
-print(mnc)
-nu_from_mnc = nu_correct(file = mnc)
-class(nu_from_mnc)
-ortho2(nu_from_mnc, mask = nu_from_mnc > 40)
-```
-
-In addition to the \code{readmgz} and \code{readmgh} functions above, we have a \code{readmnc} function for reading in MINC files, after conversion to NIfTI files.  If you pass in a \code{nifti} object in directly into `nu_correct`, the function will automatically convert any NIfTI input files, and then run the correction (shown below).  We can also pass in a mask (generated from above) to run the correction only the areas of the brain.
-
-```{r nu_correct_nifti, echo = TRUE, eval = TRUE, results='markup', dependson=c("watershed_plot", "reorient")}
-nu_masked = nu_correct(file = reoriented_img, mask = mask)
-class(nu_masked)
-```
-
-Overall, this correction is a way to make the intensities of the brain more homogeneous spatially.  This method is different from that implemented in FSL (and therefore \pkg{fslr}), so it provides an alternative method to the R user than currently available.
-
+Thus, we can read in the output images, surfaces, and the tables of values from Freesurfer.  
 
 ## Additional Features
 
-For the initial release, we did not implement a method to read the annotation files and other surface-based files that Freesurfer uses.  Reading in these files are planned for a future release.  Freesurfer can also analyze diffusion tensor imaging (DTI) data and some of the functions have been adapted for \pkg{freesurfer} but have not been thoroughly tested.  
+For the initial release, we did not implement a method to read the annotation files and other surface-based files that Freesurfer uses.  Reading in these files are planned for a future release and may work with the functions described above.  Freesurfer can also analyze diffusion tensor imaging (DTI) data and some of the functions have been adapted for \pkg{freesurfer} but have not been thoroughly tested.  
 
 
-## Conclusion
+# Conclusion
 The neuroimaging community has developed a large collection of tools for image processing and analysis.  These tools have additional functionality that is not present in R, such as the surface-based registration and processing of Freesurfer.  We have incorporated these tools in our previous work porting FSL to R using \pkg{fslr}.  We present a similar incorporation in the form of \pkg{freesurfer} to bridge this gap and provide R users functions from Freesurfer.  Interfacing R with existing, powerful software provides users with thoroughly-tested software and an additional community of users, which would not be available if the functions were rewritten in R.  Although this external software dependency may not be an advantage, it benefits from the years of previous testing. 
 
 There has been an increasing popularity of similar interfacing of tools within the Python community such as Nipype \citep{gorgolewski_nipype:_2011} (https://qa.debian.org/popcon.php?package=nipype).  As many users of R may not have experience with Python or bash scripting, we believe \pkg{freesurfer} provides a lower threshold for use in the R community. 
 
 Most importantly, as \pkg{freesurfer} is based on the R framework, all the benefits of using R are available, such as dynamic documents, Shiny applications, customized figures, and state-of-the-art statistical methods.  These benefits provide unique functionality compared to other software packages for neuroimaging.  
 
-## Reproducibility
+# Reproducibility
 
 This paper was generated using the \CRANpkg{rticles} package [@rticles].  All necessary code to generate this report is located at: [https://github.com/muschellij2/fs_paper](https://github.com/muschellij2/fs_paper).
 
 \bibliography{RJreferences}
 
 # Supplemental Material
-
-## Additional files from Freesurfer
-We have created simple wrappers to read in surface, curvature, and label files from Freesurfer output.  We will show the the functions with associated output 
 
 ### Label files
 Here we will read a label file for the left hemisphere cortex:
@@ -411,4 +459,4 @@ out = read_fs_label(file)
 head(out)
 ```
 
-The coordinates are mostly used in these files, not the value assigned.  They can be used for registration as well.  
+The coordinates are mostly used in these files, not the value assigned.  They can be used for registration as well.  Overall, we have readers for some of these file types, but have not used them in our research and therefore have not tested them extensively.
