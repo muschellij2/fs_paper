@@ -17,12 +17,6 @@ more easily, including brain images, brain surfaces, and Freesurfer
 output tables.
 }
 
-\begin{Schunk}
-\begin{Soutput}
-#> Warning: package 'knitr' was built under R version 3.3.2
-\end{Soutput}
-\end{Schunk}
-
 \section{Introduction}\label{introduction}
 
 \label{sec:intro}
@@ -117,14 +111,14 @@ specify a file or different directory rather than specifying the
 subject.
 
 One example is the \code{asegstats2table} Freesurfer function.
-Freesurfer performs segmentations of the anaomtical image into different
-stuctures and has associated statistics for each region such as volume
+Freesurfer performs segmentations of the anatomical image into different
+structures and has associated statistics for each region such as volume
 and mean intensity. The \code{asegstats2table} function transforms
 \textbf{a}natomical \textbf{seg}mentation \textbf{stat}istics from into
 to a table. The default argument for \code{asegstats2table} is to pass
 in a subject name rather than a file. The \pkg{freesurfer}
 \code{asegstats2table} function allows the R user to specify the subject
-name, but also allows the user to alternatively specify a filename
+name, but also allows the user to alternatively specify a file name
 instead. This function will temporarily set \code{SUBJECTS\_DIR} to a
 temporary directory, copy the file to that directory, execute the
 command, then reset the \code{SUBJECTS\_DIR} variable. This provides a
@@ -578,7 +572,7 @@ a segmentation error.
 \subsection{\texorpdfstring{Converting surfaces using
 \code{mris\_convert}}{Converting surfaces using }}\label{converting-surfaces-using}
 
-Freesurfer includes seegmentations of different surfaces of the brain
+Freesurfer includes segmentations of different surfaces of the brain
 alongside the volumetric segmentations above. As the \code{mri\_convert}
 function provides a tool to convert image volumes to a series of output
 formats, the \code{mris\_convert} (note the ``s'') allows users to
