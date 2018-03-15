@@ -6,12 +6,9 @@ author:
     address:
     - Department of Biostatistics
     - 615 N Wolfe St, Baltimore, MD, 21205
-    email: jmuschel@jhsph.edu
+    email: elizabethmargaretsweeney@gmail.com
   - name: Elizabeth M. Sweeney
-    affiliation: Rice University
-    address:
-    - Department of Statistics 
-    - 6100 Main St, Duncan Hall, Houston, TX, 77005
+    affiliation: Flatiron Health
     email: ems15@rice.edu 
   - name: Ciprian M. Crainiceanu
     affiliation: Johns Hopkins Bloomberg School of Public Health
